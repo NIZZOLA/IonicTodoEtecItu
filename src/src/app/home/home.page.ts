@@ -1,5 +1,9 @@
 import { Component } from '@angular/core';
-import { AlertController } from '@ionic/angular';
+import {
+  ActionSheetController,
+  AlertController,
+  ToastController,
+} from '@ionic/angular';
 
 @Component({
   selector: 'app-home',
@@ -7,11 +11,13 @@ import { AlertController } from '@ionic/angular';
   styleUrls: ['home.page.scss'],
 })
 export class HomePage {
-
-  constructor(public alertCtrl : AlertController) {}
-
-  unread(item) {
-
+  tasks: any[] = []; // cria-se uma lista (array) de objetos
+  constructor(
+    public alertCtrl: AlertController,
+    private toastCtrl: ToastController,
+    private actionSheetCtrl: ActionSheetController
+  ) {
+    this.loadStorage();
   }
 
   async presentAlert() {
@@ -20,7 +26,7 @@ export class HomePage {
       header: 'Alert',
       subHeader: 'Subtitle',
       message: 'This is an alert message.',
-      buttons: ['OK']
+      buttons: ['OK'],
     });
 
     await alert.present();
@@ -29,100 +35,15 @@ export class HomePage {
     console.log('onDidDismiss resolved with role', role);
   }
 
-
   async ShowAdd() {
-
-        const alert = await this.alertCtrl.create( {
-        header: 'O que deseja fazer ?',
-        inputs: [
-          {
-            name: 'taskToDo',
-            type: 'text',
-            placeholder: 'Comprar pão'
-          }
-        ],
-        buttons: [
-          {
-            text: 'Cancelar',
-            role: 'cancel',
-            cssClass: 'secondary',
-            handler: () => {
-              console.log('clicked cancel');
-            }
-          },
-          {
-            text: 'Adicionar',
-            handler: (form) => {
-              //this.ShowAdd(form.taskToDo);
-            }
-          }
-        ]
-      });
-      await alert.present();
-  }
-
-  async presentAlertPrompt() {
     const alert = await this.alertCtrl.create({
-      cssClass: 'my-custom-class',
-      header: 'Prompt!',
+      header: 'O que deseja fazer ?',
       inputs: [
         {
-          name: 'name1',
+          name: 'taskToDo',
           type: 'text',
-          placeholder: 'Placeholder 1'
+          placeholder: 'digite aqui a tarefa',
         },
-        {
-          name: 'name2',
-          type: 'text',
-          id: 'name2-id',
-          value: 'hello',
-          placeholder: 'Placeholder 2'
-        },
-        // multiline input.
-        {
-          name: 'paragraph',
-          id: 'paragraph',
-          type: 'textarea',
-          placeholder: 'Placeholder 3'
-        },
-        {
-          name: 'name3',
-          value: 'http://ionicframework.com',
-          type: 'url',
-          placeholder: 'Favorite site ever'
-        },
-        // input date with min & max
-        {
-          name: 'name4',
-          type: 'date',
-          min: '2017-03-01',
-          max: '2022-01-12'
-        },
-        // input date without min nor max
-        {
-          name: 'name5',
-          type: 'date'
-        },
-        {
-          name: 'name6',
-          type: 'number',
-          min: -5,
-          max: 10
-        },
-        {
-          name: 'name7',
-          type: 'number'
-        },
-        {
-          name: 'name8',
-          type: 'password',
-          placeholder: 'Advanced Attributes',
-          cssClass: 'specialClass',
-          attributes: {
-            maxlength: 4,
-            inputmode: 'decimal'
-          }
-        }
       ],
       buttons: [
         {
@@ -130,105 +51,79 @@ export class HomePage {
           role: 'cancel',
           cssClass: 'secondary',
           handler: () => {
-            console.log('Confirm Cancel');
-          }
-        }, {
-          text: 'Ok',
-          handler: () => {
-            console.log('Confirm Ok');
-          }
-        }
-      ]
+            console.log('clicked cancel');
+          },
+        },
+        {
+          text: 'Adicionar',
+          handler: (form) => {
+            console.log(form.taskToDo);
+            // debugger;
+            this.Add(form.taskToDo);
+          },
+        },
+      ],
     });
-
     await alert.present();
   }
 
+  async Add(newTask: string) {
+    // valida se usuário preencheu task
+    if (newTask.trim().length < 1) {
+      const toast = await this.toastCtrl.create({
+        message: 'preencha com informações válidas !',
+        duration: 2000,
+        position: 'top',
+      });
 
-  async presentAlertCheckbox() {
-    const alert = await this.alertCtrl.create({
-      cssClass: 'my-custom-class',
-      header: 'Checkbox',
-      inputs: [
-        {
-          name: 'checkbox1',
-          type: 'checkbox',
-          label: 'Checkbox 1',
-          value: 'value1',
-          handler: () => {
-            console.log('Checkbox 1 selected');
-          },
-          checked: true
-        },
-        {
-          name: 'checkbox2',
-          type: 'checkbox',
-          label: 'Checkbox 2',
-          value: 'value2',
-          handler: () => {
-            console.log('Checkbox 2 selected');
-          }
-        },
+      toast.present();
+      return;
+    }
 
-        {
-          name: 'checkbox3',
-          type: 'checkbox',
-          label: 'Checkbox 3',
-          value: 'value3',
-          handler: () => {
-            console.log('Checkbox 3 selected');
-          }
-        },
+    let task = { name: newTask, done: false };
+    this.tasks.push(task);
+    this.updateLocalStorage();
+  }
 
-        {
-          name: 'checkbox4',
-          type: 'checkbox',
-          label: 'Checkbox 4',
-          value: 'value4',
-          handler: () => {
-            console.log('Checkbox 4 selected');
-          }
-        },
+  updateLocalStorage() {
+    localStorage.setItem('taskDb', JSON.stringify(this.tasks));
+  }
 
-        {
-          name: 'checkbox5',
-          type: 'checkbox',
-          label: 'Checkbox 5',
-          value: 'value5',
-          handler: () => {
-            console.log('Checkbox 5 selected');
-          }
-        },
+  loadStorage() {
+    let taskJson = localStorage.getItem('taskDb');
+    console.log(taskJson);
+    if (taskJson) {
+      this.tasks = JSON.parse(taskJson);
+    }
+  }
 
-        {
-          name: 'checkbox6',
-          type: 'checkbox',
-          label: 'Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6 Checkbox 6',
-          value: 'value6',
-          handler: () => {
-            console.log('Checkbox 6 selected');
-          }
-        }
-      ],
+  async openActions(task: any) {
+    const actionSheet = await this.actionSheetCtrl.create({
+      header: 'O QUE DESEJA FAZER ?',
       buttons: [
         {
-          text: 'Cancel',
+          text: task.done ? 'Desmarcar' : 'Marcar',
+          icon: task.done ? 'radio-button-off' : 'checkmark-circle',
+          handler: () => {
+            task.done = !task.done;
+            this.updateLocalStorage();
+          },
+        },
+        {
+          text: 'Cancelar',
+          icon: 'close',
           role: 'cancel',
-          cssClass: 'secondary',
           handler: () => {
-            console.log('Confirm Cancel');
-          }
-        }, {
-          text: 'Ok',
-          handler: () => {
-            console.log('Confirm Ok');
-          }
-        }
-      ]
+            console.log('cancel clicked');
+          },
+        },
+      ],
     });
-
-    await alert.present();
+    await actionSheet.present();
   }
 
-
+  async delete(task: any) {
+    this.tasks = this.tasks.filter((taskArray) => taskArray != task);
+    this.updateLocalStorage();
+  }
 }
