@@ -7,8 +7,7 @@ import { TaskToDo } from '../model/task-to-do';
 })
 export class TaskToDoService {
 
-  //url = 'http://apitodotask.azurewebsites.net/api/tasktodo';
-  url = 'http://localhost:5000/api/tasktodo';
+  url = 'https://localhost:44335/api/tasktodo';
 
   httpOptions = { header: new HttpHeaders({ 'Content-Type' : 'application/json'})};
 
@@ -20,12 +19,14 @@ export class TaskToDoService {
 
   getAll() {
     return this.http.get(this.url).toPromise();
+
   }
 
   post(taskName: string) {
-    let taskObj = { name: taskName };
-    console.log('dentro do post' + taskName);
+    let taskObj = { nome: taskName };
     
+    console.log('dentro do post' + taskName);
+
     let httpOptions = {
       headers: new HttpHeaders({ 'Content-Type': 'application/json' })
     };
@@ -35,7 +36,10 @@ export class TaskToDoService {
 
   put(id: string, task: TaskToDo) {
 
-    return this.http.put(this.url + '/' + id, JSON.stringify(task) ).toPromise();
+    let httpOptions = {
+      headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+    };
+    return this.http.put(this.url + '/' + id, JSON.stringify(task) , httpOptions ).toPromise();
   }
 
   delete(id: string) {
