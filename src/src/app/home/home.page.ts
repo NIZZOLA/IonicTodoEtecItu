@@ -4,6 +4,8 @@ import {
   AlertController,
   ToastController,
 } from '@ionic/angular';
+import { TaskToDoService } from '../api/task-to-do.service';
+import { TaskToDo } from '../model/task-to-do';
 
 @Component({
   selector: 'app-home',
@@ -12,12 +14,15 @@ import {
 })
 export class HomePage {
   tasks: any[] = []; // cria-se uma lista (array) de objetos
+
   constructor(
     public alertCtrl: AlertController,
     private toastCtrl: ToastController,
-    private actionSheetCtrl: ActionSheetController
+    private actionSheetCtrl: ActionSheetController,
+    private taskApi: TaskToDoService
   ) {
-    this.loadStorage();
+    //this.loadStorage();
+    this.loadApi();
   }
 
   async presentAlert() {
@@ -80,9 +85,13 @@ export class HomePage {
       return;
     }
 
-    let task = { name: newTask, done: false };
+    let task = new TaskToDo();
+    task.nome = newTask;
+    task.active = true;
+
+    this.taskApi.post(newTask);
+
     this.tasks.push(task);
-    this.updateLocalStorage();
   }
 
   updateLocalStorage() {
@@ -97,16 +106,27 @@ export class HomePage {
     }
   }
 
+  loadApi() {
+    this.taskApi.getAll()
+    .then((json) => {
+      // TRANSFORMAR EM UMA COLEÇÃO E COLOCAR NO TASKS
+      this.tasks = <TaskToDo[]>json;
+    })
+    .catch((erro) => {
+      console.log("Api indisponivel !" + erro );
+    })
+  }
+
   async openActions(task: any) {
     const actionSheet = await this.actionSheetCtrl.create({
       header: 'O QUE DESEJA FAZER ?',
       buttons: [
         {
-          text: task.done ? 'Desmarcar' : 'Marcar',
-          icon: task.done ? 'radio-button-off' : 'checkmark-circle',
+          text: task.active ? 'Desmarcar' : 'Marcar',
+          icon: task.active ? 'radio-button-off' : 'checkmark-circle',
           handler: () => {
-            task.done = !task.done;
-            this.updateLocalStorage();
+            task.active = !task.active;
+            this.taskApi.put(task.id, task);
           },
         },
         {
@@ -123,7 +143,8 @@ export class HomePage {
   }
 
   async delete(task: any) {
+
+    this.taskApi.delete(task.id);
     this.tasks = this.tasks.filter((taskArray) => taskArray != task);
-    this.updateLocalStorage();
   }
 }
